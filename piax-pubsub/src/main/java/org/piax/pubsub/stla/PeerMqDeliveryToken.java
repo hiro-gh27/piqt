@@ -179,11 +179,14 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     }
 
     public void startDelivery(PeerMqEngine engine) throws MqException {
+        startDeliveryEach(engine);
+        /*
         if (USE_DELEGATE.value()) {
             startDeliveryDelegate(engine);
         } else {
             startDeliveryEach(engine);
         }
+        */
     }
 
     public void startDeliveryDelegate(PeerMqEngine engine) throws MqException {
@@ -259,6 +262,17 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     @Override
     public void waitForCompletion() throws MqException {
         try {
+            completionFuture.thenAccept(bool ->{
+                // nothing todo
+            });
+        }catch (Exception e){
+            if (aListener != null){
+                aListener.onFailure(this, e);
+            }
+            throw new MqException(e);
+        }
+        /*
+        try {
             completionFuture.get();
         } catch (Exception e) {
             if (aListener != null) {
@@ -266,6 +280,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
             }
             throw new MqException(e);
         }
+        */
     }
 
     @Override
