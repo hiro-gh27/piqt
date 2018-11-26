@@ -2,13 +2,12 @@ package org.piax.pubsub.stla;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.piax.pubsub.MqCallback;
-import org.piax.pubsub.MqDeliveryToken;
-import org.piax.pubsub.MqMessage;
-import org.piax.pubsub.MqTopic;
+import org.piax.pubsub.*;
 
 public class PeerMqEngineTest {
 
@@ -248,6 +247,42 @@ public class PeerMqEngineTest {
             e.printStackTrace();
         }
     }
-    
+
+    //XXX: can't use connect(), it method throws "this transport suzaku is already finalize"
+    @Test
+    public void TimeStampTest() throws Exception{
+        ArrayList<PeerMqEngine> engines = launcherLocalMqEngines(2);
+        PeerMqEngine seed = engines.get(0);
+        engines.forEach(peerMqEngine -> peerMqEngine.setCallback(defaultMqCallBack));
+        engines.forEach(peerMqEngine -> peerMqEngine.setSeed(seed.host, seed.port));
+        for (PeerMqEngine peerMqEngine : engines) {
+            peerMqEngine.connect();
+        }
+        seed.subscribe("piax");
+        engines.get(engines.size()).publish("piax", "test".getBytes(), 0);
+        System.out.println();
+    }
+
+    public ArrayList<PeerMqEngine> launcherLocalMqEngines(int enginesNumber){
+        ArrayList<PeerMqEngine> localEngines = new ArrayList<>();
+        for (int i = 0; i < enginesNumber; i++) {
+            try (PeerMqEngine e = new PeerMqEngine("localhost", 12367 + i)) {
+                localEngines.add(e);
+            } catch (MqException e) {
+                e.printStackTrace();
+            }
+        }
+        return localEngines;
+    }
+
+    public static MqCallback defaultMqCallBack;
+    @BeforeAll
+    public static void init(){
+        defaultMqCallBack = (subscribedTopic, m) -> System.out.println(
+                "received: "+ m + "subscription: "+
+                subscribedTopic.getSpecified()
+                + "topic: "+ m.getTopic()
+        );
+    }
     
 }
