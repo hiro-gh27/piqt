@@ -2,12 +2,19 @@ package org.piax.pubsub.stla;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.piax.pubsub.*;
+import org.piax.util.RandomUtil;
 
 public class PeerMqEngineTest {
 
@@ -251,38 +258,34 @@ public class PeerMqEngineTest {
     //XXX: can't use connect(), it method throws "this transport suzaku is already finalize"
     @Test
     public void TimeStampTest() throws Exception{
-        ArrayList<PeerMqEngine> engines = launcherLocalMqEngines(2);
-        PeerMqEngine seed = engines.get(0);
-        engines.forEach(peerMqEngine -> peerMqEngine.setCallback(defaultMqCallBack));
-        engines.forEach(peerMqEngine -> peerMqEngine.setSeed(seed.host, seed.port));
-        for (PeerMqEngine peerMqEngine : engines) {
-            peerMqEngine.connect();
-        }
-        seed.subscribe("piax");
-        engines.get(engines.size()).publish("piax", "test".getBytes(), 0);
-        System.out.println();
-    }
+        PeerMqEngine engine1 = new PeerMqEngine("localhost", 12367);
+        PeerMqEngine engine2 = new PeerMqEngine("localhost", 12368);
+        engine1.setCallback(defaultMqCallBack);
+        engine2.setCallback(defaultMqCallBack);
+        engine1.setSeed("localhost", 12367);
+        engine2.setSeed("localhost", 12367);
+        engine1.connect();
+        engine2.connect();
 
-    public ArrayList<PeerMqEngine> launcherLocalMqEngines(int enginesNumber){
-        ArrayList<PeerMqEngine> localEngines = new ArrayList<>();
-        for (int i = 0; i < enginesNumber; i++) {
-            try (PeerMqEngine e = new PeerMqEngine("localhost", 12367 + i)) {
-                localEngines.add(e);
-            } catch (MqException e) {
-                e.printStackTrace();
-            }
-        }
-        return localEngines;
+        String timestamp = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)+"/";
+        String msg = RandomStringUtils.randomAlphabetic(1024-timestamp.length());
+        msg = timestamp+msg;
+        engine1.subscribe("piax");
+        engine2.publish("piax", msg.getBytes(), 0);
+        Thread.sleep(3000);
+        engine1.disconnect();
+        engine2.disconnect();
     }
 
     public static MqCallback defaultMqCallBack;
     @BeforeAll
     public static void init(){
-        defaultMqCallBack = (subscribedTopic, m) -> System.out.println(
-                "received: "+ m + "subscription: "+
+        defaultMqCallBack = (subscribedTopic, m) ->{
+            m¥
+            System.out.println(
+                "received: "+ m + "\nsubscription: "+
                 subscribedTopic.getSpecified()
-                + "topic: "+ m.getTopic()
-        );
+                + "\ntopic: "+ m.getTopic();
+        });
     }
-    
 }
