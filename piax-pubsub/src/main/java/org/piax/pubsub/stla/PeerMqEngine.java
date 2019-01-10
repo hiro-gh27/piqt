@@ -17,10 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.piax.common.Destination;
-import org.piax.common.Endpoint;
-import org.piax.common.PeerId;
-import org.piax.common.TransportId;
+import org.piax.common.*;
 import org.piax.gtrans.ReceivedMessage;
 import org.piax.gtrans.Transport;
 import org.piax.gtrans.ov.Link;
@@ -476,8 +473,11 @@ public class PeerMqEngine implements MqEngine,
 
     @Override
     public void publish(MqMessage m) throws MqException {
+        m.recordTimestamp();
         PeerMqDeliveryToken t = (PeerMqDeliveryToken) publishAsync(m);
+        m.recordTimestamp();
         t.waitForCompletion();
+        m.recordTimestamp();
     }
 
     public PeerId getPeerId() {

@@ -280,12 +280,10 @@ public class PeerMqEngineTest {
     public static MqCallback defaultMqCallBack;
     @BeforeAll
     public static void init(){
-        defaultMqCallBack = (subscribedTopic, m) ->{
-            m¥
+        defaultMqCallBack = (subscribedTopic, m) ->
             System.out.println(
                 "received: "+ m + "\nsubscription: "+
                 subscribedTopic.getSpecified()
-                + "\ntopic: "+ m.getTopic();
-        });
+                + "\ntopic: "+ m.getTopic());
     }
 }

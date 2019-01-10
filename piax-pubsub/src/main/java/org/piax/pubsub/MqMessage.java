@@ -10,6 +10,10 @@
 package org.piax.pubsub;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 public class MqMessage implements Serializable {
     /**
@@ -104,5 +108,35 @@ public class MqMessage implements Serializable {
 
     public boolean isDuplicate() {
         return this.dup;
+    }
+
+    public void recordTimestamp() {
+        OffsetDateTime odt = OffsetDateTime.now();
+        StackTraceElement[] stes = Thread.currentThread().getStackTrace();
+        StackTraceElement callingElement = stes[2];
+        if (callingElement.getClassName().equals("NestedMessage")){
+            callingElement = stes[3];
+        }
+
+        String timestamp = odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + "@" + callingElement + "/";
+        byte[] timestampBytes = timestamp.getBytes();
+
+        int insert = 0;
+        byte[] origin = getPayload();
+        byte[] modified = Arrays.copyOf(origin, origin.length);
+
+        for (int i = 0; i < origin.length; i++) {
+            if (origin[i] == 47 && i + 1 < origin.length) {
+                if (origin[i + 1] < 48 || origin[i + 1] > 57) {
+                    insert = i + 1;
+                    break;
+                }
+            }
+        }
+        if (insert + timestamp.getBytes().length > origin.length) {
+            // TODO: should throw exceptions
+        }
+        System.arraycopy(timestampBytes, 0, modified, insert, timestampBytes.length);
+        setPayload(modified);
     }
 }

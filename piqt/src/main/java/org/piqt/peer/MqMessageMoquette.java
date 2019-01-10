@@ -11,7 +11,12 @@
 package org.piqt.peer;
 
 import org.piax.common.PeerId;
+import org.piax.pubsub.MqException;
 import org.piax.pubsub.MqMessage;
+
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 public class MqMessageMoquette extends MqMessage {
 
@@ -39,4 +44,5 @@ public class MqMessageMoquette extends MqMessage {
     public String getClientId() {
         return clientId;
     }
+
 }

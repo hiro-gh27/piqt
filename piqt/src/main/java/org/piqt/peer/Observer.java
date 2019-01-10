@@ -4,6 +4,7 @@ import static org.piqt.peer.Util.*;
 
 import java.util.List;
 
+import org.piax.common.Timestamp;
 import org.piax.pubsub.MqException;
 import org.piax.pubsub.MqMessage;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ public class Observer implements InterceptHandler, PeerHandler, SessionsStoreHan
             bytes = new byte[length];
             buf.getBytes(buf.readerIndex(), bytes);
         }
+        bytes = new Timestamp().join(bytes);
         try {
             engine.publish(msg.getTopicName(), msg.getClientID(), bytes, 
                     msg.getQos().value(), msg.isRetainFlag());
