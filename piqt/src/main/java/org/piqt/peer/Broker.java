@@ -10,6 +10,7 @@
  */
 package org.piqt.peer;
 
+import io.moquette.BrokerConstants;
 import io.moquette.interception.InterceptHandler;
 import io.moquette.server.Server;
 import io.moquette.server.config.ClasspathResourceLoader;
@@ -79,6 +80,7 @@ public class Broker {
             lh.add(observer);
             if (properties != null) {
                 IConfig config = new MemoryConfig(properties);
+                config.setProperty(BrokerConstants.BROKER_INTERCEPTOR_THREAD_POOL_SIZE, "10");
                 server.startServer(config, lh);
             } else {
                 server.startServer(config);
