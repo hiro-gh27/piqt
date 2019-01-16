@@ -3,3 +3,10 @@
 .settings
 .gitignore
 */bin/
+
+# IntelliJ
+.idea
+
+ # output files
+*/bin/
+*/target/
