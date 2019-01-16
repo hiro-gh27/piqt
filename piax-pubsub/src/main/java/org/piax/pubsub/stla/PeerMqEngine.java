@@ -56,7 +56,7 @@ public class PeerMqEngine implements MqEngine,
     protected List<LATKey> joinedKeys; // joined keys;
 
     public static int DELIVERY_TIMEOUT = 3000;
-    public static String NETTY_TYPE = "tcp";
+    public static String NETTY_TYPE = "udp";
     int seqNo;
 
     ConcurrentHashMap<Integer, PeerMqDeliveryToken> tokens = new ConcurrentHashMap<>();
@@ -83,7 +83,8 @@ public class PeerMqEngine implements MqEngine,
         this.host = host;
         this.port = port;
         try {
-            o = new Suzaku<>("id:*:" + NETTY_TYPE + ":" + host + ":" + port);
+            // udp:*:localhost:12367
+            o = new Suzaku<>(NETTY_TYPE + ":*:" + host + ":" + port);
             d = new Delegator<>(this);
         } catch (Exception e) {
             throw new MqException(e);
@@ -183,7 +184,7 @@ public class PeerMqEngine implements MqEngine,
     }
 
     public void setSeed(String host, int port) {
-        seed = NETTY_TYPE + ":" + host + ":" + port;
+        seed = NETTY_TYPE + ":*:" + host + ":" + port;
     }
 
     public void setClusterId(String clusterId) {
