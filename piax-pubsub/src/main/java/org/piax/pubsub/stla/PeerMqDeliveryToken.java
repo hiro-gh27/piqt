@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import javafx.beans.binding.When;
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.Option.BooleanOption;
@@ -179,7 +180,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     }
 
     public void startDelivery(PeerMqEngine engine) throws MqException {
-        if (USE_DELEGATE.value()) {
+        if (false) {
             startDeliveryDelegate(engine);
         } else {
             startDeliveryEach(engine);
@@ -259,7 +260,13 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     @Override
     public void waitForCompletion() throws MqException {
         try {
-            completionFuture.get();
+            completionFuture.thenAccept(bool->{
+                if (bool){
+                    // TODO: Message transmission was successful.
+                }else {
+                    // TODO: Message transmission failed.
+                }
+            });
         } catch (Exception e) {
             if (aListener != null) {
                 aListener.onFailure(this, e);
