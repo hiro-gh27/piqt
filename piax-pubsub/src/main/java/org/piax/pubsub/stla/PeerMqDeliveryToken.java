@@ -9,11 +9,13 @@
  */
 package org.piax.pubsub.stla;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import javafx.beans.binding.When;
+import org.piax.ayame.tracer.LocalSpanRegistry;
+import org.piax.ayame.tracer.jaeger.GlobalJaegerTracer;
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.Option.BooleanOption;
@@ -34,6 +36,8 @@ import org.piax.pubsub.stla.Delegator.ControlMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.opentracing.Span;
+
 public class PeerMqDeliveryToken implements MqDeliveryToken {
     private static final Logger logger = LoggerFactory
             .getLogger(PeerMqDeliveryToken.class);
@@ -51,8 +55,13 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     ConcurrentHashMap<String, DeliveryDelegator> delegators;
     CompletableFuture<Boolean> completionFuture;
 
+    Span span;
+    UUID spanID;
+    LocalSpanRegistry spanRegistry;
+
     public PeerMqDeliveryToken(Overlay<Destination, LATKey> overlay,
             MqMessage message, MqCallback callback, int seqNo) {
+
         assert message != null;
         this.m = message;
         this.o = overlay;
@@ -60,6 +69,11 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
         this.seqNo = seqNo;
         completionFuture = new CompletableFuture<>();
         delegators = new ConcurrentHashMap<>();
+
+        this.span = GlobalJaegerTracer.get().buildSpan("new PeerMqDeliberyToken").start();
+        this.spanID = UUID.randomUUID();
+        spanRegistry = LocalSpanRegistry.getInstance();
+        spanRegistry.add(spanID, span);
     }
 
     public void startDeliveryWithDelegators(PeerMqEngine engine,
