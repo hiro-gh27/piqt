@@ -1,6 +1,6 @@
 /*
  * PeerMqEngine.java - An implementation of pub/sub engine.
- * 
+ *
  * Copyright (c) 2016 PIAX development team
  *
  * You can redistribute it and/or modify it under either the terms of
@@ -14,9 +14,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.piax.ayame.tracer.GlobalTracerResolver;
+import org.piax.ayame.tracer.message.TracerMessageBuilder;
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.PeerId;
@@ -37,6 +40,10 @@ import org.piax.pubsub.MqTopic;
 import org.piax.pubsub.stla.Delegator.ControlMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
 
 public class PeerMqEngine implements MqEngine,
         OverlayListener<Destination, LATKey>, Closeable {
@@ -111,7 +118,7 @@ public class PeerMqEngine implements MqEngine,
 
     @SuppressWarnings("unchecked")
     public CompletableFuture<Void> delegate(PeerMqDeliveryToken token, Endpoint e, String topic, MqMessage message) {
-        return ((Transport<Endpoint>)o.getLowerTransport()).sendAsync(new TransportId("delegate"), e, 
+        return ((Transport<Endpoint>)o.getLowerTransport()).sendAsync(new TransportId("delegate"), e,
                 new ControlMessage(getEndpoint(),
                         token.seqNo, topic, message, (short) -1));
     }
@@ -119,11 +126,11 @@ public class PeerMqEngine implements MqEngine,
     public Endpoint getEndpoint() {
         return o.getLowerTransport().getEndpoint();
     }
-    
+
     public int getPort() {
         return port;
     }
-    
+
     public String getHost() {
         return host;
     }
@@ -135,7 +142,7 @@ public class PeerMqEngine implements MqEngine,
     public NearestDelegator getNearestDelegator(String topic) {
         return delegateCache.get(topic);
     }
-    
+
     public void removeDelegator(String topic) {
         delegateCache.remove(topic);
     }
@@ -148,10 +155,10 @@ public class PeerMqEngine implements MqEngine,
         }
         logger.debug("found token:" + token);
         token.delegationSucceeded(kString);
-        
+
         //tokens.remove(tokenId);
     }
-    
+
     public void delegationRetry(int tokenId, String kString) {
         logger.debug("delivery for '{}' retrying on {}", kString, getPeerId());
         PeerMqDeliveryToken token = tokens.get(tokenId);
@@ -167,7 +174,7 @@ public class PeerMqEngine implements MqEngine,
             token.replaceExistingDeliveryDelegator(d);
             token.findDelegatorAndDeliver(d, this, kString);
         } catch (MqException e) {
-            
+
         }
     }
 
@@ -197,7 +204,7 @@ public class PeerMqEngine implements MqEngine,
     public List<LATKey> getJoinedKeys() {
         return joinedKeys;
     }
-    
+
     public boolean isJoined(String kString) {
         for (LATKey k : joinedKeys) {
             if (k.key.getTopic().equals(kString)) {
@@ -311,7 +318,7 @@ public class PeerMqEngine implements MqEngine,
     public void close() {
         fin();
     }
-    
+
     @Override
     public void fin() {
         o.fin();
@@ -370,10 +377,19 @@ public class PeerMqEngine implements MqEngine,
     @Override
     public void publish(String topic, byte[] payload, int qos)
             throws MqException {
-        MqMessage m = new MqMessage(topic);
-        m.setPayload(payload);
-        m.setQos(qos);
-        publish(m);
+        Tracer tracer = GlobalTracerResolver.resolve();
+        Span span = tracer.activeSpan();
+        if (Objects.isNull(span)){
+            span = tracer.buildSpan("publish"+topic).start();
+            span.setTag("tag", Thread.currentThread().getName());
+        }
+        try (Scope ignored = tracer.activateSpan(span)) {
+            MqMessage m = new MqMessage(topic);
+            span.log(TracerMessageBuilder.fastBuild(logger,"in PeerMqEngine publish: "+topic, m));
+            m.setPayload(payload);
+            m.setQos(qos);
+            publish(m);
+        }
     }
 
     @Override
@@ -434,8 +450,8 @@ public class PeerMqEngine implements MqEngine,
                     // delegate to right node.
                     // (if right node also matches, the delivery duplicates.) 
                     logger.debug("right node {} matches to topic '{}', forward.", right.addr, rightKey);
-                    ((Transport<Endpoint>)o.getLowerTransport()).sendAsync(new TransportId("delegate"), 
-                            right.addr, c); 
+                    ((Transport<Endpoint>)o.getLowerTransport()).sendAsync(new TransportId("delegate"),
+                            right.addr, c);
                     return right.addr;
                 }
                 else {
@@ -491,7 +507,7 @@ public class PeerMqEngine implements MqEngine,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.piax.mq.MqEngine#subscribedTo(java.lang.String)
      */
     @Override
@@ -506,7 +522,7 @@ public class PeerMqEngine implements MqEngine,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.piax.mq.MqEngine#subscriptionMatchesTo(java.lang.String)
      */
     @Override

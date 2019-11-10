@@ -1,16 +1,24 @@
 package org.piax.pubsub.stla;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.piax.ayame.tracer.GlobalTracerResolver;
 import org.piax.pubsub.MqCallback;
 import org.piax.pubsub.MqDeliveryToken;
 import org.piax.pubsub.MqMessage;
 import org.piax.pubsub.MqTopic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.opentracing.Tracer;
 
 public class PeerMqEngineTest {
+    static Logger logger = LoggerFactory.getLogger(PeerMqEngine.class);
 
     @Test
     public void SinglePeerTest() {
@@ -77,6 +85,8 @@ public class PeerMqEngineTest {
     }
     
     public void MultiplePeersRun() throws Exception {
+        Tracer tracer = GlobalTracerResolver.resolve();
+        
         try(
                 PeerMqEngine engine1 = new PeerMqEngine("localhost", 12367);
                 PeerMqEngine engine2 = new PeerMqEngine("localhost", 12368);

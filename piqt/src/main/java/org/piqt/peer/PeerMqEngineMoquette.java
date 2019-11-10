@@ -10,14 +10,18 @@
  */
 package org.piqt.peer;
 
-import static org.piqt.peer.Util.*;
+import static org.piqt.peer.Util.newline;
+import static org.piqt.peer.Util.stackTraceStr;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
+import org.piax.ayame.tracer.jaeger.GlobalJaegerTracer;
+import org.piax.ayame.tracer.message.TracerMessageBuilder;
 import org.piax.pubsub.MqCallback;
 import org.piax.pubsub.MqDeliveryToken;
 import org.piax.pubsub.MqException;
@@ -35,6 +39,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.MqttMessageBuilders;
 import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import io.opentracing.Span;
 
 public class PeerMqEngineMoquette extends PeerMqEngine {
     private static final Logger logger = LoggerFactory
@@ -54,8 +59,8 @@ public class PeerMqEngineMoquette extends PeerMqEngine {
         setCallback(new MqCallback() {
             @Override
             public void deliveryComplete(MqDeliveryToken arg0) {
-                logger.debug("Launcher deliveryComplete: topic="
-                        + arg0.getTopics());
+                 logger.debug("Launcher deliveryComplete: topic="
+                             + Arrays.toString(arg0.getTopics()));
             }
 
             @Override
@@ -116,12 +121,16 @@ public class PeerMqEngineMoquette extends PeerMqEngine {
     }
 
     public void write(MqMessage m) {
+        Span span = GlobalJaegerTracer.get().activeSpan();
+        span.log(TracerMessageBuilder.fastBuild(logger, "", m));
+        GlobalJaegerTracer.scheduledFinishing(span);
+
         String c = null;
         if (m instanceof MqMessageMoquette) {
             MqMessageMoquette msg = (MqMessageMoquette) m;
             c = msg.getClientId();
             if (msg.getPeerId().equals(getPeerId())) {
-                return;
+                //return;
             }
         }
         if (c != null) {

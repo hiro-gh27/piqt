@@ -3,6 +3,7 @@
 .settings
 .gitignore
 */bin/
+.factorypath
 
 # IntelliJ
 .idea
