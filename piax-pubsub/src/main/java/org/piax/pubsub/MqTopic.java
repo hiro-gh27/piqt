@@ -66,25 +66,30 @@ public class MqTopic {
     }
 
     public String[] getPublisherKeyStrings() throws MqException {
+        List<String> keys = getPublisherKeys();
+        return keys.toArray(new String[0]);
+    }
+
+    public List<String> getPublisherKeys() throws MqException{
         // naive method:
         // sport => "" and "sport"
         // /sport => "" and "/sport"
         // sport/tennis/player => "", "sport", "sport/tennis" and
         // "sport/tennis/player"
-        List<String> keys = new ArrayList<String>();
-        String keyStr = "";
-        keys.add(keyStr);
+        ArrayList<String> keys = new ArrayList<>();
+        StringBuilder keyBuilder = new StringBuilder();
+        keys.add(keyBuilder.toString());
         for (Object path : topicPath) {
             if (!(path instanceof String)) {
                 throw new MqException(MqException.REASON_CODE_INVALID_TOKEN);
             }
-            keyStr += path;
+            keyBuilder.append(path);
             if (((String) path).length() != 0) {
-                keys.add(keyStr);
+                keys.add(keyBuilder.toString());
             }
-            keyStr += "/";
+            keyBuilder.append("/");
         }
-        return keys.toArray(new String[0]);
+        return keys;
     }
 
     public String getSubscriberKeyString() {

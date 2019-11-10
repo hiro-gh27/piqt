@@ -11,10 +11,20 @@
   </appender>
 
   <logger name="org.netty" level="OFF" />
-  <logger name="io.jaegertracing" level="OFF"/>
+  <logger name="io.netty" level="OFF" />
+  <logger name="io.jaegertracing" level="off"/>
   <logger name="org.piqt" level="all"/>
+  <logger name="org.eclipse" level="off"/>
+  <!--
+  <logger name="org.piax.ayame" level="info"/>
+  <logger name="org.piax.gtrans.impl" level="off"/>
+  <logger name="org.piax.gtrans.netty" level="off"/>
+  -->
+  <logger name="io.moquette" level="off"/>
+  <logger name="io.moquette.spi.impl.BrokerInterceptor" level="info"/>
 
-  <root level="debug">
+
+  <root level="trace">
     <appender-ref ref="STDOUT" />
   </root>
 

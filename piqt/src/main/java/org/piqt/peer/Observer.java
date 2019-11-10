@@ -1,6 +1,7 @@
 package org.piqt.peer;
 
-import static org.piqt.peer.Util.*;
+import static org.piqt.peer.Util.newline;
+import static org.piqt.peer.Util.stackTraceStr;
 
 import java.util.List;
 

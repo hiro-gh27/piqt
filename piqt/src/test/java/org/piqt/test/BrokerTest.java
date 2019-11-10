@@ -9,20 +9,27 @@
  */
 package org.piqt.test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.paho.client.mqttv3.IMqttClient;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.junit.jupiter.api.Test;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class BrokerTest {
 
     static MqttClientPersistence s_dataStore;
@@ -42,10 +49,9 @@ public class BrokerTest {
         }
 
         @Override
-        public void messageArrived(String topic, MqttMessage message)
-                throws Exception {
-            System.out.println("received=" + topic + ",mes=" + new String(message.getPayload()));
+        public void messageArrived(String topic, MqttMessage message) {
             receivedCount.incrementAndGet();
+            log.info("-------- subscribe {}{} ---------",topic, message);
         }
 
         @Override
@@ -65,6 +71,14 @@ public class BrokerTest {
         return m_client;
     }
 
+    private MqttAsyncClient asyncClient(String port, String clientId, MqttCallback callback) throws MqttException {
+        MemoryPersistence memoryPersistence = new MemoryPersistence();
+        MqttAsyncClient mqttAsyncClient = new MqttAsyncClient("tcp:://localhost:"+port, clientId, memoryPersistence);
+        mqttAsyncClient.setCallback(callback);
+        mqttAsyncClient.connect();
+        return mqttAsyncClient;
+    }
+
     private void subscribe(IMqttClient m_client) throws Exception {
         m_client.subscribe("topic-1", 1);
     }
@@ -76,7 +90,16 @@ public class BrokerTest {
         mes.setQos(1);
         m_client.publish("topic-1", mes);
     }
-    
+
+    private void publish(IMqttClient m_client, int qos) throws Exception {
+        String topic = "topic-1";
+        MqttMessage mes = new MqttMessage();
+        mes.setId(1);
+        mes.setPayload("hello".getBytes());
+        mes.setQos(qos);
+        log.info("------- start publish {}{} --------", topic, mes);
+        m_client.publish(topic, mes);
+    }
     private void close(IMqttClient m_client) throws Exception {
         if (m_client != null && m_client.isConnected()) {
             m_client.disconnect();
@@ -95,38 +118,42 @@ public class BrokerTest {
     @Test
     public void multiPubSubTest() throws Exception {
         String tmpDir = System.getProperty("java.io.tmpdir");
-        
+
         File tmpFile1 = new File(tmpDir, "c1");
         String persistentFile1 = tmpFile1.getAbsolutePath();
-        TstBroker sb1 = new TstBroker(10000, 10000, 10883, persistentFile1);
-        
+        TstBroker tstBroker = new TstBroker(10000, 10000, 10883, persistentFile1);
+
         File tmpFile2 = new File(tmpDir, "c2");
         String persistentFile2 = tmpFile2.getAbsolutePath();
-        TstBroker sb2 = new TstBroker(10001, 10000, 10884, persistentFile2);
+        TstBroker tstBroker2 = new TstBroker(10001, 10000, 10884, persistentFile2);
+
         IMqttClient c1 = null, c2 = null;
         try {
-            sb1.start();
-            sb2.start();
+            tstBroker.start();
+            tstBroker2.start();
             Thread.sleep(1000);
-            MyMqttCallback mmc1 = new MyMqttCallback();
-            c1 = client(10883, "c1", persistentFile1, mmc1);
-            MyMqttCallback mmc2 = new MyMqttCallback();
-            c2 = client(10884, "c2", persistentFile1, mmc2);
+            MyMqttCallback myMqttCallback1 = new MyMqttCallback();
+            c1 = client(10883, "c1", persistentFile1, myMqttCallback1);
+
+            MyMqttCallback myMqttCallback2 = new MyMqttCallback();
+            c2 = client(10884, "c2", persistentFile1, myMqttCallback2);
             subscribe(c2);
             Thread.sleep(1000);
-            publish(c1);
+
+            publish(c1, 1);
+
             Thread.sleep(1000);
-            System.out.println(mmc2.getCount());
-            assertEquals(1,mmc2.getCount());
-            
-            System.out.println(mmc1.getCount());
-            assertEquals(0,mmc1.getCount());
+            log.trace("call back msg counter: {}", myMqttCallback2.getCount());
+            assertEquals(1,myMqttCallback2.getCount());
+
+            log.trace("call back msg counter: {}", myMqttCallback1.getCount());
+            assertEquals(0,myMqttCallback1.getCount());
         }
         finally {
             close(c1);
             close(c2);
-            sb1.fin();
-            sb2.fin();
+            tstBroker.fin();
+            tstBroker2.fin();
             cleanPersistenceFile(persistentFile1);
             cleanPersistenceFile(persistentFile2);
         }
