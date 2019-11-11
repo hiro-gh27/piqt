@@ -132,6 +132,8 @@ public class Launcher {
     }
     
     private File configFile() {
+        String piqtPath = System.getProperty(PIQT_PATH_PROPERTY_NAME, PROPERTY_FILE_NAME);
+        logger.info("piqt.property= {}", piqtPath);
         return new File(System.getProperty(PIQT_PATH_PROPERTY_NAME), PROPERTY_FILE_NAME);
     }
 
@@ -149,7 +151,7 @@ public class Launcher {
         } catch (IOException e1) {
             String msg = "Failed to read configuration file: ";
             String detail = stackTraceStr(e1);
-            logger.error(msg + detail);
+            logger.error(msg + detail, e);
             System.exit(1);
         }
 

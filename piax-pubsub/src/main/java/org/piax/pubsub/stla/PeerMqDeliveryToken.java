@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.piax.ayame.tracer.LocalSpanRegistry;
 import org.piax.ayame.tracer.jaeger.GlobalJaegerTracer;
 import org.piax.ayame.tracer.message.TracerMessage;
 import org.piax.ayame.tracer.message.TracerMessageBuilder;
@@ -64,7 +63,6 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     CompletableFuture<Void> completionFuture;
     HashMap<String, CompletableFuture<Boolean>> publisherKeyFuture;
     UUID spanID;
-    LocalSpanRegistry spanRegistry;
 
     public PeerMqDeliveryToken(Overlay<Destination, LATKey> overlay,
                                MqMessage message, MqCallback callback, int seqNo) {
@@ -395,7 +393,6 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
                ", completionFuture=" + completionFuture +
                ", publisherKeyFuture=" + publisherKeyFuture +
                ", spanID=" + spanID +
-               ", spanRegistry=" + spanRegistry +
                '}';
     }
 }

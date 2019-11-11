@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
+import org.piax.ayame.tracer.GlobalTracerResolver;
 import org.piax.ayame.tracer.jaeger.GlobalJaegerTracer;
 import org.piax.ayame.tracer.message.TracerMessageBuilder;
 import org.piax.pubsub.MqCallback;
@@ -121,7 +122,7 @@ public class PeerMqEngineMoquette extends PeerMqEngine {
     }
 
     public void write(MqMessage m) {
-        Span span = GlobalJaegerTracer.get().activeSpan();
+        Span span = GlobalTracerResolver.resolve().activeSpan();
         span.log(TracerMessageBuilder.fastBuild(logger, "", m));
         GlobalJaegerTracer.scheduledFinishing(span);
 
