@@ -1,31 +1,37 @@
 <configuration>
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <!-- encoders are assigned the type
-         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
     <encoder>
-      <!--pattern>%d{yyyy-MM-dd} | %d{HH:mm:ss.SSS } | %-25.25thread | %5p | %-50.50logger | %-30(\(%F:%L\)) | %m%n</pattern-->
       <pattern>%-40.40thread | %5p | %-60.60logger | %-40.40(\(%F:%L\)) | %m%n</pattern>
+      <!--pattern>%d{yyyy-MM-dd} | %d{HH:mm:ss.SSS } | %-25.25thread | %5p | %-50.50logger | %-30(\(%F:%L\)) | %m%n</pattern-->
       <!--pattern>%-40.40thread | %5p | %-40.40(\(%F:%L\)) | %m%n</pattern-->
     </encoder>
   </appender>
 
+  <appender name="TracerAppender" class="org.piax.common.logback.TracerAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd} | %d{HH:mm:ss.SSS } | %-50.50thread | %5p | %-50.50logger | %-30(\(%F:%L\)) %n%m
+      </pattern>
+      <charset>utf8</charset>
+    </encoder>
+  </appender>
+
+  <!--
   <logger name="org.netty" level="OFF" />
   <logger name="io.netty" level="OFF" />
-  <logger name="io.jaegertracing" level="off"/>
-  <logger name="org.piqt" level="all"/>
-  <logger name="org.eclipse" level="off"/>
-  <!--
-  <logger name="org.piax.ayame" level="info"/>
-  <logger name="org.piax.gtrans.impl" level="off"/>
-  <logger name="org.piax.gtrans.netty" level="off"/>
+  <logger name="io.jaegertracing" level="off" />
+  <logger name="org.piqt" level="all" />
+  <logger name="org.eclipse" level="off" />
+  <logger name="org.piax.ayame" level="info" />
+  <logger name="org.piax.gtrans.impl" level="off" />
+  <logger name="org.piax.gtrans.netty" level="off" />
+  <logger name="io.moquette" level="off" />
+  <logger name="io.moquette.spi.impl.BrokerInterceptor" level="OFF" />
   -->
-  <logger name="io.moquette" level="off"/>
-  <logger name="io.moquette.spi.impl.BrokerInterceptor" level="info"/>
 
-
-  <root level="trace">
+  <root level="ALL">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="TracerAppender" />
   </root>
 
 </configuration>

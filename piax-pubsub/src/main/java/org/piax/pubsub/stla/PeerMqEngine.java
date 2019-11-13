@@ -18,8 +18,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.piax.ayame.tracer.GlobalTracerResolver;
-import org.piax.ayame.tracer.message.TracerMessageBuilder;
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.PeerId;
@@ -44,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 
 public class PeerMqEngine implements MqEngine,
         OverlayListener<Destination, LATKey>, Closeable {
@@ -377,7 +376,7 @@ public class PeerMqEngine implements MqEngine,
     @Override
     public void publish(String topic, byte[] payload, int qos)
             throws MqException {
-        Tracer tracer = GlobalTracerResolver.resolve();
+        Tracer tracer = GlobalTracer.get();
         Span span = tracer.activeSpan();
         if (Objects.isNull(span)){
             span = tracer.buildSpan("publish"+topic).start();
@@ -385,7 +384,7 @@ public class PeerMqEngine implements MqEngine,
         }
         try (Scope ignored = tracer.activateSpan(span)) {
             MqMessage m = new MqMessage(topic);
-            span.log(TracerMessageBuilder.fastBuild(logger,"in PeerMqEngine publish: "+topic, m));
+            logger.debug("PeerMqEngine publish={}", m);
             m.setPayload(payload);
             m.setQos(qos);
             publish(m);

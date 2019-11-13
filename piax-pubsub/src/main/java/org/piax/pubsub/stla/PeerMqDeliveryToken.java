@@ -17,9 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.piax.ayame.tracer.jaeger.GlobalJaegerTracer;
-import org.piax.ayame.tracer.message.TracerMessage;
-import org.piax.ayame.tracer.message.TracerMessageBuilder;
+import org.piax.ayame.tracer.jaeger.SpanFinishLoop;
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.Option.BooleanOption;
@@ -242,7 +240,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     public void startDeliveryForPublisherKeyString(PeerMqEngine engine, String kString) throws MqException {
         Tracer tracer = TracerResolver.resolveTracer();
         final Span span = tracer.activeSpan();
-        span.log(TracerMessageBuilder.fastBuild(logger, "(topic=" + kString + ")", this));
+        logger.debug("topic={}",kString);
         try {
             RetransMode mode;
             ResponseType type;
@@ -269,7 +267,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
                     new KeyRange<LATKey>(new LATKey(LATopic.topicMin(kString))
                             ,new LATKey(LATopic.topicMax(kString))), (Object) m
                     , (res, ex) -> {
-                        GlobalJaegerTracer.scheduledFinishing(span);
+                        SpanFinishLoop.scheduledFinishing(span);
                         if (res == Response.EOR) {
                             if (aListener != null) {
                                 aListener.onSuccess(this);
@@ -304,13 +302,13 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     public void waitForCompletion() throws MqException {
         Tracer tracer = TracerResolver.resolveTracer();
         Span span = tracer.activeSpan();
+        // NOTE: 1-msg = 1-CompFuture, all-masgs = completionFuture
         try {
-            // NOTE: 1-msg = 1-CompFuture, all-masgs = completionFuture
-            completionFuture.thenRunAsync(() -> {
-                TracerMessage<String, String> tracerMessage = TracerMessageBuilder
-                        .fastBuild(logger, "MqDeliveryToken get completionFuture", this);
-                span.log(tracerMessage);
-                GlobalJaegerTracer.scheduledFinishing(span);
+            completionFuture.thenRun(() -> {
+                try (Scope ignored = tracer.activateSpan(span)) {
+                    logger.debug("MqDeliveryToken get completionFuture{}", this);
+                    SpanFinishLoop.scheduledFinishing(span);
+                }
             });
         } catch (Exception e) {
             if (aListener != null) {
