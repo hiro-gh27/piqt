@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
-import org.piax.ayame.tracer.jaeger.SpanFinishLoop;
 import org.piax.pubsub.MqCallback;
 import org.piax.pubsub.MqDeliveryToken;
 import org.piax.pubsub.MqException;
@@ -123,7 +122,6 @@ public class PeerMqEngineMoquette extends PeerMqEngine {
     public void write(MqMessage m) {
         Span span = GlobalTracer.get().activeSpan();
         logger.debug("Internal publish to Moquette, message{}", m);
-        SpanFinishLoop.scheduledFinishing(span);
         String c = null;
         if (m instanceof MqMessageMoquette) {
             MqMessageMoquette msg = (MqMessageMoquette) m;

@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.piax.ayame.tracer.jaeger.SpanFinishLoop;
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.Option.BooleanOption;
@@ -267,14 +266,13 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
                     new KeyRange<LATKey>(new LATKey(LATopic.topicMin(kString))
                             ,new LATKey(LATopic.topicMax(kString))), (Object) m
                     , (res, ex) -> {
-                        SpanFinishLoop.scheduledFinishing(span);
                         if (res == Response.EOR) {
                             if (aListener != null) {
                                 aListener.onSuccess(this);
                             }
-                            logger.info("cf({}, key{})", completionFuture.toString(), kString);
+                            logger.info("cf({}, key{})", completionFuture, kString);
                             publisherKeyFuture.get(kString).complete(true);
-                            //completionFuture.complete(true);
+                            //completionFuture.complete(true);           i
                             if (c != null) {
                                 c.deliveryComplete(this);
                             }
@@ -287,6 +285,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
                                 aListener.onFailure(this, ex);
                             }
                         }
+                        span.finish();
                     },
                     opts);
         } catch (Exception e) {
@@ -304,10 +303,10 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
         Span span = tracer.activeSpan();
         // NOTE: 1-msg = 1-CompFuture, all-masgs = completionFuture
         try {
-            completionFuture.thenRun(() -> {
+            completionFuture.thenRunAsync(() -> {
                 try (Scope ignored = tracer.activateSpan(span)) {
-                    logger.debug("MqDeliveryToken get completionFuture{}", this);
-                    SpanFinishLoop.scheduledFinishing(span);
+                    logger.debug("request message is finishing detected by completableFuture, so span finish");
+                    span.finish();
                 }
             });
         } catch (Exception e) {
