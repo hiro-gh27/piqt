@@ -9,6 +9,7 @@
  */
 package org.piax.pubsub.stla;
 
+import io.opentracing.util.GlobalTracer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
-import io.opentracing.contrib.tracerresolver.TracerResolver;
+
 
 public class PeerMqDeliveryToken implements MqDeliveryToken {
     private static final Logger logger = LoggerFactory
@@ -215,7 +216,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     }
 
     public void startDeliveryEach(PeerMqEngine engine) throws MqException {
-        Tracer tracer = TracerResolver.resolveTracer();
+        Tracer tracer = GlobalTracer.get();
         String topic = m.getTopic();
         MqTopic mqTopic = new MqTopic(topic);
         String[] pStrs = mqTopic.getPublisherKeyStrings();
@@ -225,7 +226,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
             logger.info(String.format("async point parentSpan=%s", parentSpan.context().toString()));
         }
         for (String pStr : pStrs) {
-            final Span childSpan = tracer.buildSpan("startDeliveryEach").asChildOf(parentSpan).start();
+            final Span childSpan = tracer.buildSpan("startDeliveryEach=["+pStr+"]").asChildOf(parentSpan).start();
             String childSpanLogMsg = String.format("async point: parentSpan=%s, child=%s",
                                                    parentSpan.context().toString(),
                                                    childSpan.context().toString());
@@ -237,7 +238,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     }
 
     public void startDeliveryForPublisherKeyString(PeerMqEngine engine, String kString) throws MqException {
-        Tracer tracer = TracerResolver.resolveTracer();
+        Tracer tracer = GlobalTracer.get();
         final Span span = tracer.activeSpan();
         logger.debug("topic={}",kString);
         try {
@@ -299,7 +300,7 @@ public class PeerMqDeliveryToken implements MqDeliveryToken {
     @Override
     @Deprecated
     public void waitForCompletion() throws MqException {
-        Tracer tracer = TracerResolver.resolveTracer();
+        Tracer tracer = GlobalTracer.get();
         Span span = tracer.activeSpan();
         // NOTE: 1-msg = 1-CompFuture, all-masgs = completionFuture
         try {
