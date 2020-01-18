@@ -13,13 +13,20 @@ package org.piqt.peer;
 import static org.piqt.peer.Util.newline;
 import static org.piqt.peer.Util.stackTraceStr;
 
+import io.moquette.spi.impl.ProtocolProcessor;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.mqtt.MqttMessageBuilders;
+import io.netty.handler.codec.mqtt.MqttPublishMessage;
+import io.netty.handler.codec.mqtt.MqttQoS;
+import io.opentracing.Span;
+import io.opentracing.util.GlobalTracer;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
-
 import org.piax.pubsub.MqCallback;
 import org.piax.pubsub.MqDeliveryToken;
 import org.piax.pubsub.MqException;
@@ -30,15 +37,6 @@ import org.piax.pubsub.stla.LATopic;
 import org.piax.pubsub.stla.PeerMqEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.moquette.spi.impl.ProtocolProcessor;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.mqtt.MqttMessageBuilders;
-import io.netty.handler.codec.mqtt.MqttPublishMessage;
-import io.netty.handler.codec.mqtt.MqttQoS;
-import io.opentracing.Span;
-import io.opentracing.util.GlobalTracer;
 
 public class PeerMqEngineMoquette extends PeerMqEngine {
     private static final Logger logger = LoggerFactory
@@ -75,6 +73,38 @@ public class PeerMqEngineMoquette extends PeerMqEngine {
                 }
                 logger.debug("Launcher messageArrived: topic=" + m.getTopic()
                         + " msg=" + msg);
+                write(m);
+            }
+        });
+    }
+
+    public PeerMqEngineMoquette(String host, int port,
+        Properties config, String peerID) throws MqException {
+        super(host, port, peerID);
+        moquette = new Broker(this, config);
+        //peerId = overlay.getPeerId();
+        observer = new Observer(this);
+
+        setCallback(new MqCallback() {
+            @Override
+            public void deliveryComplete(MqDeliveryToken arg0) {
+                logger.debug("Launcher deliveryComplete: topic="
+                    + Arrays.toString(arg0.getTopics()));
+            }
+
+            @Override
+            public void messageArrived(MqTopic t, MqMessage m) {
+                byte[] body = m.getPayload();
+                String msg = null;
+                try {
+                    msg = new String(body, "UTF-8");
+                } catch (UnsupportedEncodingException e1) {
+                    String msg2 = "Exception caused by debugging codes.";
+                    String detail = stackTraceStr(e1);
+                    logger.debug(msg2 + newline + detail);
+                }
+                logger.debug("Launcher messageArrived: topic=" + m.getTopic()
+                    + " msg=" + msg);
                 write(m);
             }
         });

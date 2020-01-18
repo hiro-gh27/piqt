@@ -10,8 +10,20 @@
  */
 package org.piqt.web;
 
-import static org.piqt.peer.Util.*;
-import static org.piqt.web.MqttPiaxConfig.*;
+import static org.piqt.peer.Util.isEmpty;
+import static org.piqt.peer.Util.newline;
+import static org.piqt.peer.Util.stackTraceStr;
+import static org.piqt.web.MqttPiaxConfig.KEY_AUTO_START;
+import static org.piqt.web.MqttPiaxConfig.KEY_CLEAR_START;
+import static org.piqt.web.MqttPiaxConfig.KEY_JETTY_HOST;
+import static org.piqt.web.MqttPiaxConfig.KEY_JETTY_PORT;
+import static org.piqt.web.MqttPiaxConfig.KEY_MQTT_PERSISTENT_STORE;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_DOMAIN_NAME;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_IP_ADDRESS;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_PEER_ID;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_PORT;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_SEED_IP_ADDRESS;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_SEED_PORT;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,11 +35,10 @@ import java.security.ProtectionDomain;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Properties;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
-
+import net.arnx.jsonic.JSON;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -36,8 +47,6 @@ import org.piax.pubsub.MqException;
 import org.piqt.peer.PeerMqEngineMoquette;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.arnx.jsonic.JSON;
 
 public class Launcher {
 
@@ -320,7 +329,8 @@ public class Launcher {
 */
         try {
 //            e = new PeerMqEngineMoquette(szk, config.toMQTTProps());
-            e = new PeerMqEngineMoquette(pip, pport, config.toMQTTProps());
+            String pid = (String) config.get(KEY_PIAX_PEER_ID);
+            e = new PeerMqEngineMoquette(pip, pport, config.toMQTTProps(), pid);
         } catch (IOException | MqException e1) {
             msg = startLog + "Failed to start moquette.";
             String detail = stackTraceStr(e1);

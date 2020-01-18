@@ -9,6 +9,10 @@
  */
 package org.piax.pubsub.stla;
 
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,11 +21,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.piax.common.Destination;
 import org.piax.common.Endpoint;
 import org.piax.common.PeerId;
 import org.piax.common.TransportId;
+import org.piax.gtrans.ChannelTransport;
+import org.piax.gtrans.IdConflictException;
+import org.piax.gtrans.Peer;
 import org.piax.gtrans.ReceivedMessage;
 import org.piax.gtrans.Transport;
 import org.piax.gtrans.ov.Link;
@@ -38,11 +44,6 @@ import org.piax.pubsub.MqTopic;
 import org.piax.pubsub.stla.Delegator.ControlMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.opentracing.Scope;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.util.GlobalTracer;
 
 public class PeerMqEngine implements MqEngine,
         OverlayListener<Destination, LATKey>, Closeable {
@@ -114,6 +115,55 @@ public class PeerMqEngine implements MqEngine,
             d.succeeded(c);
         });
     }
+
+    @SuppressWarnings("unchecked")
+    public PeerMqEngine(String host, int port, String sPeerID) throws MqException {
+        subscribes = new ArrayList<MqTopic>();
+        joinedKeys = new ArrayList<LATKey>();
+        this.host = host;
+        this.port = port;
+
+
+        PeerId pid = new PeerId(sPeerID);
+        Peer peer = Peer.getInstance(pid);
+        Endpoint endpoint = Endpoint.newEndpoint("id:*:" + NETTY_TYPE + ":" + host + ":" + port);
+        ChannelTransport transport = null;
+        
+        try {
+            transport = peer.newBaseChannelTransport(endpoint);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (IdConflictException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            o = new Suzaku<>(Suzaku.DEFAULT_TRANSPORT_ID, transport, Suzaku.DEFAULT_SUZAKU_TYPE);
+            d = new Delegator<>(this);
+        } catch (Exception e) {
+            throw new MqException(e);
+        }
+        //pid = o.getLowerTransport().getPeerId();
+        Transport<Endpoint> t = ((Transport<Endpoint>)o.getLowerTransport());
+        t.setListener(new TransportId("delegate"), (trans, mes) -> {
+            ControlMessage c = (ControlMessage)mes.getMessage();
+            logger.debug("delegating: content={}", c.content);
+            d.delegate(c);
+        });
+        t.setListener(new TransportId("delegated"), (trans, mes) -> {
+            ControlMessage c = (ControlMessage)mes.getMessage();
+            d.delegated(c);
+        });
+        t.setListener(new TransportId("failed"), (trans, mes) -> {
+            ControlMessage c = (ControlMessage)mes.getMessage();
+            d.failed(c);
+        });
+        t.setListener(new TransportId("succeeded"), (trans, mes) -> {
+            ControlMessage c = (ControlMessage)mes.getMessage();
+            d.succeeded(c);
+        });
+    }
+
 
     @SuppressWarnings("unchecked")
     public CompletableFuture<Void> delegate(PeerMqDeliveryToken token, Endpoint e, String topic, MqMessage message) {
