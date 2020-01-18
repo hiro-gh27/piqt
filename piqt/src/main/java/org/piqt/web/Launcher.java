@@ -20,7 +20,7 @@ import static org.piqt.web.MqttPiaxConfig.KEY_JETTY_PORT;
 import static org.piqt.web.MqttPiaxConfig.KEY_MQTT_PERSISTENT_STORE;
 import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_DOMAIN_NAME;
 import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_IP_ADDRESS;
-import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_PEER_ID;
+import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_PID;
 import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_PORT;
 import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_SEED_IP_ADDRESS;
 import static org.piqt.web.MqttPiaxConfig.KEY_PIAX_SEED_PORT;
@@ -329,7 +329,8 @@ public class Launcher {
 */
         try {
 //            e = new PeerMqEngineMoquette(szk, config.toMQTTProps());
-            String pid = (String) config.get(KEY_PIAX_PEER_ID);
+            
+            String pid = (String) config.get(KEY_PIAX_PID);
             e = new PeerMqEngineMoquette(pip, pport, config.toMQTTProps(), pid);
         } catch (IOException | MqException e1) {
             msg = startLog + "Failed to start moquette.";
