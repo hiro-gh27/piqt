@@ -13,6 +13,7 @@ package org.piqt.web;
 import static org.piqt.peer.Util.isEmpty;
 import static org.piqt.peer.Util.isOnlySpace;
 
+import io.moquette.BrokerConstants;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -20,17 +21,19 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import io.moquette.BrokerConstants;
 
 public class MqttPiaxConfig {
     public static final String KEY_PIAX_SEED_IP_ADDRESS = "piax_seed_ip_address";
     public static final String KEY_PIAX_SEED_PORT = "piax_seed_port";
     public static final String KEY_PIAX_IP_ADDRESS = "piax_ip_address";
     public static final String KEY_PIAX_PORT = "piax_port";
-//    public static final String KEY_PIAX_PEER_ID = "piax_peer_id";
+    public static final String KEY_PIAX_PID = "piax_peer_id";
     public static final String KEY_PIAX_DOMAIN_NAME = "piax_domain_name";
+
+    public static final String HOGEEE ="hhhhhhooooogogeeeer";
 
     public static final String KEY_MQTT_BIND_ADDRESS = "mqtt_bind_address";
     public static final String KEY_MQTT_PORT = "mqtt_port";
@@ -57,7 +60,7 @@ public class MqttPiaxConfig {
             KEY_MQTT_PORT, KEY_MQTT_ALLOW_ANONYMOUS, KEY_MQTT_USER_NAME,
             KEY_MQTT_USER_PASSWORD, KEY_MQTT_ACL, KEY_MQTT_PERSISTENT_STORE,
             KEY_JETTY_HOST, KEY_JETTY_PORT, KEY_UPDATE_INTERVAL,
-            KEY_AUTO_START, KEY_CLEAR_START };
+            KEY_AUTO_START, KEY_CLEAR_START, KEY_PIAX_PID};
 
     public static final String[] INT_KEYS = { KEY_PIAX_SEED_PORT,
             KEY_PIAX_PORT, KEY_MQTT_PORT, KEY_JETTY_PORT };
@@ -65,8 +68,17 @@ public class MqttPiaxConfig {
     HashMap<String, String> p;
     Pattern p1, p2;
 
+
+    public static MqttPiaxConfig INCETANCE;
+
+    public static Optional<MqttPiaxConfig> get(){
+        return Optional.ofNullable(INCETANCE);
+    }
+
+
     public MqttPiaxConfig(Properties prop) {
         init(prop);
+        INCETANCE = this;
     }
 
     private void init(Properties prop) {
